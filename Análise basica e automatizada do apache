@@ -1,0 +1,62 @@
+#!/bin/bash
+
+# Script: analisar_apache_log.sh
+# Objetivo: Análise básica e automatizada de logs do Apache
+# Data da Execução: $(date '+%d/%m/%Y %H:%M:%S')
+
+LOGFILE="$1"
+
+# Validação do argumento
+if [ -z "$LOGFILE" ]; then
+    echo "Uso: $0 /caminho/para/access.log"
+    exit 1
+fi
+
+# Verifica se o arquivo existe
+if [ ! -f "$LOGFILE" ]; then
+    echo "Arquivo '$LOGFILE' não encontrado!"
+    exit 2
+fi
+
+# Verifica se o arquivo parece ser um log Apache
+if ! grep -q 'HTTP/' "$LOGFILE"; then
+    echo "O arquivo não parece ser um log Apache válido."
+    exit 3
+fi
+
+# Criar arquivo de saída
+OUTPUT="analise_$(basename "$LOGFILE")_$(date +%Y%m%d_%H%M%S).txt"
+exec > >(tee "$OUTPUT")
+
+echo "==== Análise de Log Apache: $LOGFILE ===="
+echo "Data da análise: $(date '+%d/%m/%Y %H:%M:%S')"
+
+echo -e "\n[1] Total de requisições no log:"
+wc -l < "$LOGFILE"
+
+echo -e "\n[2] IPs únicos e número de requisições por IP (top 10):"
+awk '{print $1}' "$LOGFILE" | sort | uniq -c | sort -nr | head -10
+
+echo -e "\n[3] Requisições com erro 404 (top 10 arquivos):"
+grep ' 404 ' "$LOGFILE" | awk '{print $7}' | sort | uniq -c | sort -nr | head -10
+
+echo -e "\n[4] Quantidade de requisições por código de status HTTP:"
+awk '{print $9}' "$LOGFILE" | sort | uniq -c | sort -nr
+
+echo -e "\n[5] User-Agents mais comuns (top 5):"
+awk -F\" '{print $6}' "$LOGFILE" | sort | uniq -c | sort -nr | head -5
+
+echo -e "\n[6] URLs mais requisitadas (top 10):"
+awk '{print $7}' "$LOGFILE" | sort | uniq -c | sort -nr | head -10
+
+echo -e "\n[7] Horário com maior número de acessos (top 5):"
+awk -F\[ '{print $2}' "$LOGFILE" | cut -d: -f1,2 | sort | uniq -c | sort -nr | head -5
+
+echo -e "\n[8] Requisições com erro 500 (se houver):"
+grep ' 500 ' "$LOGFILE" | awk '{print $7}' | sort | uniq -c | sort -nr | head -5
+
+echo -e "\n[9] Tipos de métodos HTTP utilizados:"
+awk '{print $6}' "$LOGFILE" | tr -d '"' | sort | uniq -c | sort -nr
+
+echo -e "\n[✓] Análise finalizada com sucesso. Resultado salvo em: $OUTPUT"
+
