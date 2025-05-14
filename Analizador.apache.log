@@ -1,0 +1,76 @@
+#!/bin/bash
+
+# Script: analisar_apache_log.sh
+# Autor: Flausino
+# Professor: Carlos
+# Versão: com Cores para códigos HTTP
+
+# Variáveis de cor
+RED='\033[1;31m'
+GREEN='\033[1;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[1;34m'
+NC='\033[0m' # No Color / Reset
+
+LOGFILE="$1"
+DATA=$(date +%d/%m/%Y\ %H:%M:%S)
+ARQUIVO_SAIDA="analise_access.log_$(date +%Y%m%d_%H%M%S).txt"
+
+if [ -z "$LOGFILE" ]; then
+    echo -e "${RED}Uso: $0 /caminho/para/access.log${NC}"
+    exit 1
+fi
+
+if [ ! -f "$LOGFILE" ]; then
+    echo -e "${RED}Arquivo '$LOGFILE' não encontrado!${NC}"
+    exit 2
+fi
+
+exec > >(tee "$ARQUIVO_SAIDA")
+
+echo -e "${BLUE}==== Análise de Log Apache: $LOGFILE ====${NC}"
+echo -e "${BLUE}Data da análise: $DATA${NC}"
+
+echo -e "\n${BLUE}[1] Total de requisições no log:${NC}"
+wc -l < "$LOGFILE"
+
+echo -e "\n${BLUE}[2] IPs únicos e número de requisições por IP (top 10):${NC}"
+awk '{print $1}' "$LOGFILE" | sort | uniq -c | sort -nr | head -10
+
+echo -e "\n${BLUE}[3] Requisições com erro 404 (top 10 arquivos):${NC}"
+grep ' 404 ' "$LOGFILE" | awk '{print $7}' | sort | uniq -c | sort -nr | head -10
+
+echo -e "\n${BLUE}[4] Quantidade de requisições por código de status HTTP:${NC}"
+awk '{print $9}' "$LOGFILE" | sort | uniq -c | sort -nr | while read count code; do
+    if [[ "$code" == 200 ]]; then
+        echo -e "${GREEN}$count $code${NC}"
+    elif [[ "$code" == 301 || "$code" == 302 || "$code" == 403 ]]; then
+        echo -e "${YELLOW}$count $code${NC}"
+    elif [[ "$code" == 404 || "$code" == 500 || "$code" == 501 || "$code" == 502 || "$code" == 503 ]]; then
+        echo -e "${RED}$count $code${NC}"
+    else
+        echo -e "$count $code"
+    fi
+done
+
+echo -e "\n${BLUE}[5] User-Agents mais comuns (top 5):${NC}"
+awk -F\" '{print $6}' "$LOGFILE" | sort | uniq -c | sort -nr | head -5
+
+echo -e "\n${BLUE}[6] URLs mais requisitadas (top 10):${NC}"
+awk '{print $7}' "$LOGFILE" | sort | uniq -c | sort -nr | head -10
+
+echo -e "\n${BLUE}[7] Horário com maior número de acessos (top 5):${NC}"
+awk -F\[ '{print $2}' "$LOGFILE" | cut -d: -f1,2 | sort | uniq -c | sort -nr | head -5
+
+echo -e "\n${BLUE}[8] Requisições com erro 500 (se houver):${NC}"
+grep ' 500 ' "$LOGFILE" || echo -e "${GREEN}Nenhuma requisição 500 encontrada.${NC}"
+
+echo -e "\n${BLUE}[9] Tipos de métodos HTTP utilizados:${NC}"
+awk '{print $6}' "$LOGFILE" | tr -d '"' | sort | uniq -c | sort -nr
+
+echo -e "\n${BLUE}[10] Requisições feitas pelo Nmap (destacadas):${NC}"
+grep 'Nmap Scripting Engine' "$LOGFILE" | awk '{print $1, $4, $5, $6, $7, $9}' | sort | uniq -c | sort -nr | while read -r line; do
+    echo -e "${YELLOW}$line${NC}"
+done
+
+echo -e "\n${GREEN}[✓] Análise finalizada com sucesso.${NC} Resultado salvo em: $ARQUIVO_SAIDA
