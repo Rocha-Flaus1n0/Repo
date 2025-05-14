@@ -1,0 +1,36 @@
+#!/bin/bash
+
+# ========= CONFIGURAÇÕES =========
+LOG="/var/log/auth.log"  # Para CentOS/RHEL use: /var/log/secure
+LIMITE=5                 # Nº de tentativas para considerar suspeito
+RELATORIO="/tmp/relatorio_tentativas.txt"
+DATA=$(date "+%d-%m-%Y %H:%M:%S")
+
+# ========= CORES =========
+RED="\033[1;31m"
+GREEN="\033[1;32m"
+YELLOW="\033[1;33m"
+RESET="\033[0m"
+
+echo -e "${YELLOW}[!] Monitorando tentativas de invasão - $DATA${RESET}"
+
+# ========= LIMPA RELATÓRIO ANTIGO =========
+> "$RELATORIO"
+
+# ========= BUSCA FALHAS DE AUTENTICAÇÃO =========
+grep "Failed password" "$LOG" | awk '{print $(NF-3)}' | sort | uniq -c | sort -nr | while read tentativas ip; do
+  if [ "$tentativas" -ge "$LIMITE" ]; then
+    echo -e "${RED}[!] Alerta: IP suspeito detectado!${RESET}"
+    echo -e "${RED}IP: $ip | Tentativas: $tentativas${RESET}"
+    echo "$DATA - IP: $ip - Tentativas: $tentativas" >> "$RELATORIO"
+  fi
+done
+
+# ========= RELATÓRIO FINAL =========
+if [ -s "$RELATORIO" ]; then
+  echo -e "${YELLOW}\nRelatório salvo em: $RELATORIO${RESET}"
+else
+  echo -e "${GREEN}Nenhuma atividade suspeita detectada.${RESET}"
+  rm -f "$RELATORIO"
+fi
+
