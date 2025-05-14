@@ -1,0 +1,111 @@
+#!/bin/bash
+
+# === Banner principal ===
+banner() {
+    echo "Modo de Uso:"
+    echo "./analise.log.sh <opcao>"
+    echo ""
+    echo "Opções:"
+    echo " 1 - Simular Portscan"
+    echo " 2 - Varredura de Ping (Ping Sweep)"
+    echo " 3 - Ler arquivo de log"
+    echo " 4 - Mostrar conteúdo do diretório"
+    echo " 5 - Testar conexão com Google (loop)"
+    echo " 6 - Contagem simples"
+    echo ""
+}
+
+# === Banner de abertura ===
+banner2() {
+    echo "Tool-Work - version 0.1"
+    echo "By Fl4us1n0"
+    echo "=========================="
+}
+
+# === Portscan simples ===
+portscan() {
+    echo "[*] Simulando portscan nas portas 22, 80 e 443 em localhost..."
+    for port in 22 80 443; do
+        timeout 1 bash -c "echo > /dev/tcp/ip/$port" 2>/dev/null &&
+        echo "Porta $port aberta" || echo "Porta $port fechada"
+    done
+}
+
+# === Ping sweep de uma sub-rede ===
+pingsweep() {
+    echo "[*] Iniciando ping sweep na sub-rede ip..."
+    for ip in {1..5}; do
+        host="ip.$ip"
+        ping -c 1 -W 1 $host &>/dev/null && echo "$host está ativo" || echo "$host inativo"
+    done
+}
+
+# === Leitura de log (ex: access.log) ===
+ler_log() {
+    if [ -z "$2" ]; then
+        echo "Uso: $0 3 /caminho/para/access.log"
+        exit 1
+    fi
+
+    file="$2"
+
+    if [ ! -f "$file" ]; then
+        echo "Arquivo $file não encontrado!"
+        exit 1
+    fi
+
+    echo "[*] Lendo conteúdo de: $file"
+    while read -r line; do
+        echo "Log: $line"
+    done < "$file"
+}
+
+# === Mostrar conteúdo do diretório atual ===
+listar_diretorio() {
+    echo "[*] Conteúdo do diretório atual:"
+    ls -la
+}
+
+# === Verificar se o Google está online ===
+testar_google() {
+    echo "[*] Testando conectividade com Google (pressione Ctrl+C para parar)..."
+    while ping -c 1 google.com &> /dev/null; do
+        echo "Google está online"
+        sleep 1
+    done
+}
+
+# === Contagem simples ===
+contagem() {
+    for i in {1..5}; do
+        echo "Contando: $i"
+        sleep 1
+    done
+}
+
+# === Execução do Script ===
+banner2
+
+case "$1" in
+    1)
+        portscan
+        ;;
+    2)
+        pingsweep
+        ;;
+    3)
+        ler_log "$@"
+        ;;
+    4)
+        listar_diretorio
+        ;;
+    5)
+        testar_google
+        ;;
+    6)
+        contagem
+        ;;
+    *)
+        banner
+        ;;
+esac
