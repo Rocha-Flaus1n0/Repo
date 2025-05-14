@@ -1,0 +1,100 @@
+!/bin/bash
+banner()
+{
+   echo "Modo de Uso"
+   echo "./script.sh opcao"
+   echo "./script.sh -a"
+   echo ""
+   echo " -a - Portscan Hping3"
+   echo " -b - PingSweep Hping3"
+   echo " -c - NC - PortScan"
+   echo " -d - PingSweep NC"
+   echo " -e - /dev/tcp PingSweep"
+   echo " -f - /dev/tcp PortScan"
+}
+
+banner2()
+{
+  echo "Work Tool"
+  echo "By Fl4us1n0"
+}
+
+banner2
+
+if [ "${1}" = "-a" ]
+then
+    echo "Portscan Hping3"
+    echo "Digite IP - Ex:2000"
+    read ip
+    echo "Digite a porta inicial"
+    read portai
+    echo "Digite a porta final"
+    read portaf
+    sudo hping3 $ip -S --scan $portail-$portaf
+done
+
+
+elif [ "${1}" = "-b" ]
+then
+    echo "PingSweet Hping3"
+    echo "Digite o Ip da Rede - Ex: 10.0.0"
+    read 
+    for i in $(seq 1 254);do
+        if [ -n "$(sudo hping3 -1 -c 1 $ip.$i 2>/dev/null| grep 'ttl')" ]; then echo "|$ip.$i"}; fi 
+    done
+
+
+
+elif [ "${1}" = "-c" ]
+then
+    echo "NC - PortScan"
+    echo "Digite IP - Ex:10.0.0"
+    read ip
+    echo "Digite a porta inicial - Ex:1"
+    read portai
+    echo "Digite a porta final - Ex:9000"
+    read portaf
+    nc -v -n -z $ip $portai-$portaf
+done
+
+    
+
+elif [ "${1}" = "-d" ]
+then
+    echo "PingSweep NC"
+    echo "Digite uma rede/24 - Ex:192.000.0.0"
+    read ip
+    echo "Digite a porta - Ex:9090"
+    read porta
+    for i in $(seq 1 254);do
+        nc -zvw 1 $ip.$i $porta 2>/dev/null && echo "Host: $ip.$i - $porta up"
+done
+
+
+elif [ "${1}" = "-e" ]
+then
+    echo "/dev/tcp PingSweep"
+    echo "Digite IP da rede - Ex:192.000.0.0"
+    read ip
+    echo "Digite a porta da pesquisa - Ex:80"
+    read porta
+    for i in $(seq 1 254); do time 0.5 echo -n 2>/dev/null < /dev/tcp/$ip.$i/$porta && echo "Host: $ip.$i>
+   
+done
+
+    elif [ "${1}" = "-f" ]
+then
+    echo "/dev/tcp PortScan"
+    echo "Digite IP - Ex:10.0.0"
+    read ip
+    echo "Digite a porta inicial - Ex:1"
+    read portai
+    echo "Digite a porta final - Ex:9000"
+    read portaf
+    for i in $(seq $portai $portaf); do timeout 0.5 echo -n 2>/dev/null </dev/tcp/$ip/$i/ && echo $i "open";
+done 
+
+else
+    banner
+    banner2
+fi
